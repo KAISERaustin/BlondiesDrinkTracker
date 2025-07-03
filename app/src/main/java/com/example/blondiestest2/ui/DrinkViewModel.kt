@@ -5,10 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.blondiestest2.data.DrinkRepository
 import com.example.blondiestest2.data.local.Drink
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -16,13 +13,64 @@ import javax.inject.Inject
 class DrinkViewModel @Inject constructor(
     private val repository: DrinkRepository
 ) : ViewModel() {
-    val drinks: StateFlow<List<Drink>> =
-        repository.allDrinks()
-            .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
-    fun addSample() {
+    val allDrinks: StateFlow<List<Drink>> = repository.getAllDrinks()
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyList()
+        )
+
+    private val _drinks = MutableStateFlow<List<Drink>>(emptyList())
+    val drinks: StateFlow<List<Drink>> = _drinks.asStateFlow()
+
+    private val _recentlyDeleted = MutableStateFlow<Drink?>(null)
+    val recentlyDeleted: StateFlow<Drink?> = _recentlyDeleted.asStateFlow()
+
+    init {
         viewModelScope.launch {
-            repository.add(Drink(name = "Espresso", ingredients = "Coffee, Water", instructions = "Brew."))
+            allDrinks.collect { list ->
+                _drinks.value = list
+            }
         }
     }
+
+    fun addDrink(name: String, ingredients: String, instructions: String) {
+        viewModelScope.launch {
+            repository.insert(Drink(name = name, ingredients = ingredients, instructions = instructions))
+        }
+    }
+
+    fun deleteDrink(drink: Drink) {
+        viewModelScope.launch {
+            repository.delete(drink)
+        }
+    }
+
+    fun updateDrink(drink: Drink) {
+        viewModelScope.launch {
+            repository.update(drink)
+        }
+    }
+
+    fun setRecentlyDeleted(drink: Drink?) {
+        _recentlyDeleted.value = drink
+    }
+
+    fun undoDelete() {
+        viewModelScope.launch {
+            _recentlyDeleted.value?.let {
+                repository.insert(it)
+                _recentlyDeleted.value = null
+            }
+        }
+    }
+
+    fun deleteAllDrinks() {
+        viewModelScope.launch {
+            repository.deleteAll()
+        }
+    }
+
+    fun observeDrinkByName(name: String) = repository.observeByName(name)
 }

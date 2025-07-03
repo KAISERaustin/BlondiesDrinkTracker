@@ -4,65 +4,107 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
+import androidx.activity.viewModels
+import androidx.compose.foundation.layout.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material3.*
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
-import com.example.blondiestest2.ui.theme.BlondiesTest2Theme
-
+import androidx.compose.ui.unit.dp
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import com.example.blondiestest2.ui.DrinkDetailScreen
 import com.example.blondiestest2.ui.DrinkListScreen
-import androidx.compose.foundation.layout.Box
+import com.example.blondiestest2.ui.DrinkViewModel
+import com.example.blondiestest2.ui.theme.BlondiesTest2Theme
+import com.example.blondiestest2.ui.theme.LocalUiScale
+import dagger.hilt.android.AndroidEntryPoint
 
-
-import dagger.hilt.android.AndroidEntryPoint         // ①
-import javax.inject.Inject                          // ②
-import com.example.blondiestest2.data.local.DrinkDao // ③
-
-@AndroidEntryPoint                                 // ④
+@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
-
-    @Inject
-    lateinit var drinkDao: DrinkDao                // ⑤
-
+    @OptIn(ExperimentalMaterial3Api::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
-        // You can now use drinkDao inside your Activity
-        // For example, launch a coroutine to read all drinks:
-        // lifecycleScope.launch { drinkDao.getAll().collect { /* … */ } }
+        // 👉 FIX: Get your view model instance
+        val viewModel: DrinkViewModel by viewModels()
 
         setContent {
-            BlondiesTest2Theme {
-                Scaffold { innerPadding ->
-                    Box(modifier = Modifier
-                        .fillMaxSize()
-                        .padding(innerPadding)
-                    ) {
-                        DrinkListScreen()
+            BoxWithConstraints {
+                val screenDp = maxWidth.value
+                val baseDp   = 412f
+                val scale    = (screenDp / baseDp).coerceIn(1f, 2f)
+
+                CompositionLocalProvider(LocalUiScale provides scale) {
+                    BlondiesTest2Theme {
+                        val navController = rememberNavController()
+
+                        Scaffold(
+                            modifier = Modifier
+                                .statusBarsPadding()
+                                .navigationBarsPadding(),
+                            topBar = {
+                                Surface(
+                                    color = MaterialTheme.colorScheme.primary,
+                                    shadowElevation = 0.dp
+                                ) {
+                                    TopAppBar(
+                                        title = {
+                                            Row(
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Icon(
+                                                    imageVector = Icons.Filled.DateRange,
+                                                    contentDescription = "App icon",
+                                                    tint = MaterialTheme.colorScheme.onPrimary
+                                                )
+                                                Spacer(modifier = Modifier.width(8.dp))
+                                                Text(
+                                                    text = "Drink Tracker",
+                                                    color = MaterialTheme.colorScheme.onPrimary
+                                                )
+                                            }
+                                        },
+                                        colors = TopAppBarDefaults.topAppBarColors(
+                                            containerColor    = MaterialTheme.colorScheme.primary,
+                                            titleContentColor = MaterialTheme.colorScheme.onPrimary
+                                        )
+                                    )
+                                }
+                            }
+                        ) { innerPadding ->
+                            NavHost(
+                                navController   = navController,
+                                startDestination = "list",
+                                modifier         = Modifier.padding(innerPadding)
+                            ) {
+                                composable("list") {
+                                    DrinkListScreen(
+                                        onDrinkSelected = { selectedName ->
+                                            navController.navigate("detail/$selectedName")
+                                        },
+                                        viewModel = viewModel  // <-- FIXED!
+                                    )
+                                }
+                                composable("detail/{drinkName}") { backStackEntry ->
+                                    val name = backStackEntry
+                                        .arguments
+                                        ?.getString("drinkName")
+                                        .orEmpty()
+                                    DrinkDetailScreen(
+                                        drinkName = name,
+                                        navController = navController
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
             }
         }
-
-    }
-}
-
-@Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name!",
-        modifier = modifier
-    )
-}
-
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    BlondiesTest2Theme {
-        Greeting("Android")
     }
 }

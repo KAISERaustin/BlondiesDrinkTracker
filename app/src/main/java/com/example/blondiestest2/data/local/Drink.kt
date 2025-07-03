@@ -7,7 +7,6 @@ import androidx.room.PrimaryKey
 data class Drink(
     @PrimaryKey(autoGenerate = true)
     val id: Int = 0,
-
     val name: String,
     val ingredients: String,
     val instructions: String

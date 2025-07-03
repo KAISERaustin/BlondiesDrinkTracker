@@ -5,18 +5,25 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface DrinkDao {
-    @Query("SELECT * FROM drinks")
-    fun getAll(): Flow<List<Drink>>
-
-    @Query("SELECT * FROM drinks WHERE id = :id")
-    suspend fun getById(id: Int): Drink?
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insert(drink: Drink): Long
+    suspend fun insert(drink: Drink)
+
+    @Delete
+    suspend fun delete(drink: Drink)
 
     @Update
     suspend fun update(drink: Drink)
 
-    @Delete
-    suspend fun delete(drink: Drink)
+    @Query("DELETE FROM drinks")
+    suspend fun deleteAll()
+
+    @Query("SELECT * FROM drinks")
+    fun getAll(): Flow<List<Drink>>
+
+    @Query("SELECT * FROM drinks WHERE name = :name LIMIT 1")
+    suspend fun getByName(name: String): Drink?
+
+    @Query("SELECT * FROM drinks WHERE name = :name LIMIT 1")
+    fun observeByName(name: String): Flow<Drink?>
 }

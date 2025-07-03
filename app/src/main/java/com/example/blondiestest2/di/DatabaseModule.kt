@@ -14,13 +14,19 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 object DatabaseModule {
+
     @Provides
     @Singleton
     fun provideDatabase(
         @ApplicationContext context: Context
     ): AppDatabase =
-        Room.databaseBuilder(context, AppDatabase::class.java, "blondies-db")
-            .fallbackToDestructiveMigration(false)
+        Room.databaseBuilder(
+            context,
+            AppDatabase::class.java,
+            "drinks_db"
+        )
+            // Destructively recreate database on version mismatch
+            .fallbackToDestructiveMigration(true)
             .build()
 
     @Provides
