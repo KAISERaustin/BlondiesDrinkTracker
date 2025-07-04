@@ -1,5 +1,6 @@
 package com.example.blondiestest2.ui
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.blondiestest2.data.DrinkRepository
@@ -8,6 +9,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import com.example.blondiestest2.data.local.SeedDefaultDrinks
 
 @HiltViewModel
 class DrinkViewModel @Inject constructor(
@@ -29,6 +31,12 @@ class DrinkViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
+            try {
+                repository.seedIfEmpty(SeedDefaultDrinks.drinks)
+            } catch (e: Exception) {
+                Log.e("DrinkViewModel", "Error during seeding drinks", e)
+            }
+
             allDrinks.collect { list ->
                 _drinks.value = list
             }

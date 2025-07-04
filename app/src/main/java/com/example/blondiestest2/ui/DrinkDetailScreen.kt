@@ -149,7 +149,7 @@ fun DrinkDetailScreen(
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         drinkValue.ingredients
-                            .split(",", "\n")
+                            .split(",", "\n", ";")
                             .map(String::trim)
                             .filter(String::isNotEmpty)
                             .forEach { ing ->
@@ -177,7 +177,7 @@ fun DrinkDetailScreen(
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         drinkValue.instructions
-                            .split("\n")
+                            .split("\n", ";")
                             .map(String::trim)
                             .filter(String::isNotEmpty)
                             .forEach { step ->
